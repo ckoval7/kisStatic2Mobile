@@ -23,7 +23,7 @@ Please help by testing other capture sources!
 # Usage
 
   These instructions assume your Kismet server is properly configured to receive
-  remote connections.
+  remote TCP (legacy) connections.
 
   The proxy should run on the same device as your capture sources and gps.
   By default the proxy will listen on `127.0.0.1:3500`
