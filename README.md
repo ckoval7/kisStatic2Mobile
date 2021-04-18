@@ -7,18 +7,18 @@ information and updates them with location provided by gpsd.
 
 It has been tested to work with:
 
-    * kismet_cap_linux_wifi
-    * kismet_cap_linux_bluetooth
-    * kismet_cap_ubertooth_one
-    * kismet_cap_bladerf_wiphy
-    * kismet_cap_nrf_52840
+  * kismet_cap_linux_wifi
+  * kismet_cap_linux_bluetooth
+  * kismet_cap_ubertooth_one
+  * kismet_cap_bladerf_wiphy
+  * kismet_cap_nrf_52840
 
 Please help by testing other capture sources!
 
 # Installation
 
-    * [Set up gpsd per your OS's Instructions](https://gpsd.gitlab.io/gpsd/installation.html)
-    * You'll need the gpsd-py3 library. Run `pip3 install gpsd-py3`
+  * [Set up gpsd per your OS's Instructions](https://gpsd.gitlab.io/gpsd/installation.html)
+  * You'll need the gpsd-py3 library. Run `pip3 install gpsd-py3`
 
 # Usage
 
