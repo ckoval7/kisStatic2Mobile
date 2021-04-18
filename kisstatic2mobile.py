@@ -74,6 +74,8 @@ def location_updater(c):
 
         while True:
             data = bytearray(c.recv(buffer))
+            if len(data) == 0:
+                break
             location = gpsd.get_current()
             s_print(f"Passing {len(data)} Bytes")
             # try:
