@@ -19,7 +19,6 @@
 import socket, struct, gpsd, threading
 from _thread import start_new_thread
 from optparse import OptionParser
-from time import sleep
 import kismet_pb2 as kismet
 import datasource_pb2 as kds
 import linuxbluetooth_pb2 as lbt
@@ -27,7 +26,6 @@ import linuxbluetooth_pb2 as lbt
 print_lock = threading.Lock()
 
 lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 def kismet_adler32(data):
     i = 0
@@ -62,17 +60,16 @@ def location_updater(c):
         kserv = (kserv_ip, int(kserv_port))
         ssock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        notconnected = True
-        while notconnected:
-            try:
-                s_print("Connecting to Kismet server.")
-                ssock.connect(kserv)
-                notconnected = False
-            except ConnectionRefusedError:
-                s_print("Kismet Server offline. Waiting 5 seconds...")
-                sleep(5)
+        connected = False
 
-        while True:
+        try:
+            s_print("Connecting to Kismet server.")
+            ssock.connect(kserv)
+            connected = True
+        except ConnectionRefusedError:
+            s_print("Kismet Server offline")
+
+        while connected:
             data = bytearray(c.recv(buffer))
             if len(data) == 0:
                 break
@@ -109,7 +106,6 @@ def location_updater(c):
 
             ssock.send(data)
             c.send(ssock.recv(buffer))
-            # total_data += len(data)
             del data
     except Exception as e:
         print(e)
