@@ -17,6 +17,7 @@ Please help by testing other capture sources!
 
 # Installation
 
+  * Minimum Python version: 3.6
   * [Set up gpsd per your OS's Instructions](https://gpsd.gitlab.io/gpsd/installation.html)
   * You'll need the gpsd-py3 library. Run `pip3 install gpsd-py3`
 

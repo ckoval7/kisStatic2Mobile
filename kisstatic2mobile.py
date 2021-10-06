@@ -16,16 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import socket, struct, gpsd, threading
+import socket
+import struct
+import gpsd
+import threading
 from _thread import start_new_thread
 from optparse import OptionParser
 import kismet_pb2 as kismet
 import datasource_pb2 as kds
 import linuxbluetooth_pb2 as lbt
 
+from sys import version_info
+if (version_info.major != 3 or version_info.minor < 6):
+    print("Looks like you're running python version " +
+          str(version_info.major) + "." +
+          str(version_info.minor) + ", which is no longer supported.")
+    print("Your python version is out of date, please update to 3.6 or newer.")
+    quit()
+
 print_lock = threading.Lock()
 
 lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 
 def kismet_adler32(data):
     i = 0
@@ -38,21 +50,23 @@ def kismet_adler32(data):
     if data_len < 4:
         return 0
 
-    for i in range(0, data_len-4, 4):
-        s2 += 4 * (s1 + data[i]) + 3 * data[i+1] + 2 * data[i+2] + data[i+3] + 10 * charoffset
-        s1 += data[i] + data[i+1] + data[i+2] + data[i+3] + 4 * charoffset
+    for i in range(0, data_len - 4, 4):
+        s2 += 4 * (s1 + data[i]) + 3 * data[i + 1] + 2 * data[i + 2] + data[i + 3] + 10 * charoffset
+        s1 += data[i] + data[i + 1] + data[i + 2] + data[i + 3] + 4 * charoffset
 
-    for i in range(i+4, data_len):
+    for i in range(i + 4, data_len):
         s1 += data[i] + charoffset
         s2 += s1
 
     output = ((s1 & 0xffff) + (s2 << 16)) & 0xffffffff
     return output
 
+
 # Safe Print
 def s_print(*a, **b):
     with print_lock:
         print(*a, **b)
+
 
 def location_updater(c):
     try:
@@ -77,11 +91,11 @@ def location_updater(c):
             s_print(f"Passing {len(data)} Bytes")
             # try:
             for byte in range(len(data)):
-                command = data[byte:byte+13].decode('utf-8', 'backslashreplace')
+                command = data[byte:byte + 13].decode('utf-8', 'backslashreplace')
                 if command == "KDSDATAREPORT" or command == "LBTDATAREPORT":
-                    data_size = struct.unpack('!I', data[byte-6:byte-2])[0]
-                    data_range = data[byte-2:byte+data_size-2]
-                    original_checksum = struct.unpack('!I', data[byte-10:byte-6])[0]
+                    data_size = struct.unpack('!I', data[byte - 6:byte - 2])[0]
+                    data_range = data[byte - 2:byte + data_size - 2]
+                    original_checksum = struct.unpack('!I', data[byte - 10:byte - 6])[0]
                     if original_checksum == kismet_adler32(data_range):
                         kis_command = kismet.Command()
                         kis_command.ParseFromString(data_range)
@@ -99,8 +113,8 @@ def location_updater(c):
                             kis_content.gps.alt = location.alt
                             kis_command.content = kis_content.SerializeToString()
                             data_out = kis_command.SerializeToString()
-                            data[byte-2:byte+data_size-2] = data_out
-                            data[byte-10:byte-6] = struct.pack('!I', kismet_adler32(data_out))
+                            data[byte - 2:byte + data_size - 2] = data_out
+                            data[byte - 10:byte - 6] = struct.pack('!I', kismet_adler32(data_out))
                         except UserWarning:
                             s_print("No GPS Data, not altering location.")
 
@@ -119,10 +133,12 @@ if __name__ == '__main__':
     ###############################################
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
-    parser.add_option("--listen", dest="listen_ipport", help="IP Address to listen to. Default 127.0.0.1:3500",
-    metavar="IP:PORT", type="str", default="127.0.0.1:3500")
-    parser.add_option("--send", dest="send_ipport", help="Kismet Server Address. Default 127.0.0.1:3501",
-    metavar="IP:PORT", type="str", default="127.0.0.1:3501")
+    parser.add_option("--listen", dest="listen_ipport",
+                      help="IP Address to listen to. Default 127.0.0.1:3500",
+                      metavar="IP:PORT", type="str", default="127.0.0.1:3500")
+    parser.add_option("--send", dest="send_ipport",
+                      help="Kismet Server Address. Default 127.0.0.1:3501",
+                      metavar="IP:PORT", type="str", default="127.0.0.1:3501")
     # parser.add_option("--debug", dest="debugging", help="Does not clear the screen. Useful for seeing errors and warnings.",
     # action="store_true")
     (options, args) = parser.parse_args()
@@ -144,7 +160,6 @@ if __name__ == '__main__':
 
         c = None
         total_data = 0
-
 
         lsock.bind((listen_ip, int(listen_port)))
         lsock.listen(max_connections)
