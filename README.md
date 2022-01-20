@@ -1,3 +1,7 @@
+## Now updated to support the latest versions of Kismet as of 19 Jan 2022
+It now works with the updated version of the remote protocol. It should still work
+with the old version too, but I haven't tested it.
+
 # kisStatic2Mobile
  TCP location updating proxy for Kismet Remote
 
