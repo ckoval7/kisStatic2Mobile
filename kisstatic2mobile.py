@@ -116,8 +116,8 @@ def location_updater(c):
                             proto2 = True
                         else:
                             proto2 = False
-                            s_print(type(data[byte - 8:byte - 4]))
-                            s_print(data[byte - 8:byte - 4])
+                            # s_print(type(data[byte - 8:byte - 4]))
+                            # s_print(data[byte - 8:byte - 4])
                             # s_print("Got Proto V1 or Something else. " +
                             #         "This will work, but please update to a newer version of Kismet")
 
