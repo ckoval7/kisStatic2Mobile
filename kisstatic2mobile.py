@@ -87,13 +87,11 @@ def location_updater(c):
             data = bytearray(c.recv(buffer))
             if len(data) == 0:
                 break
-            # s_print(data)
             location = gpsd.get_current()
             s_print(f"Passing {len(data)} Bytes")
-            # try:
             for byte in range(len(data)):
                 command = data[byte:byte + 13].decode('utf-8', 'backslashreplace')
-
+                checksum_passed = False
                 if command == "KDSDATAREPORT" or command == "LBTDATAREPORT":
                     try:
                         # Packet v2 Structure:
@@ -114,56 +112,55 @@ def location_updater(c):
                         if data[byte - 8:byte - 4] == bytearray(b'\xab\xcd\x00\x02'):
                             # s_print('Got proto v2!')
                             proto2 = True
-                        else:
-                            proto2 = False
-                            # s_print(type(data[byte - 8:byte - 4]))
-                            # s_print(data[byte - 8:byte - 4])
-                            # s_print("Got Proto V1 or Something else. " +
-                            #         "This will work, but please update to a newer version of Kismet")
-
-                        if proto2:
                             data_size = struct.unpack('!I', data[byte - 4:byte])[0]
                             data_range = data[byte + 36:byte + 36 + data_size]
+                            checksum_passed = True
                         else:
+                            proto2 = False
                             data_size = struct.unpack('!I', data[byte - 6:byte - 2])[0]
                             data_range = data[byte - 2:byte + data_size - 2]
                             original_checksum = struct.unpack('!I', data[byte - 10:byte - 6])[0]
                             # s_print("Original Checksum: " + str(original_checksum))
                             # s_print("Calculated Checksum: " + str(kismet_adler32(data_range)))
                             if original_checksum == kismet_adler32(data_range):
+                                checksum_passed = True
                                 kis_command = kismet.Command()
                                 kis_command.ParseFromString(data_range)
-                            # s_print(kis_command)
+                                # s_print(kis_command)
+                                # s_print(type(data[byte - 8:byte - 4]))
+                                # s_print(data[byte - 8:byte - 4])
+                                # s_print("Got Proto V1 or Something else. " +
+                                #         "This will work, but please update to a newer version of Kismet")
 
                         # s_print(data_size)
                         # s_print(f'Data in:\n{data_range.hex()}')
 
-                        #
-                        if command == "KDSDATAREPORT":
-                            kis_content = kds.DataReport()
-                        elif command == "LBTDATAREPORT":
-                            kis_content = lbt.LinuxBluetoothDataReport()
+                        if checksum_passed:
+                            if command == "KDSDATAREPORT":
+                                kis_content = kds.DataReport()
+                            elif command == "LBTDATAREPORT":
+                                kis_content = lbt.LinuxBluetoothDataReport()
 
-                        if proto2:
-                            kis_content.ParseFromString(data_range)
-                        else:
-                            kis_content.ParseFromString(kis_command.content)
-
-                        try:
-                            kis_content.gps.lat = location.lat
-                            kis_content.gps.lon = location.lon
-                            kis_content.gps.alt = location.alt
                             if proto2:
-                                data_out = kis_content.SerializeToString()
-                                data[byte + 36:byte + 36 + data_size] = data_out
+                                kis_content.ParseFromString(data_range)
                             else:
-                                kis_command.content = kis_content.SerializeToString()
-                                data_out = kis_command.SerializeToString()
-                                data[byte - 2:byte + data_size - 2] = data_out
-                                # s_print(f'Data out:\n{data_range.hex()}')
-                                data[byte - 10:byte - 6] = struct.pack('!I', kismet_adler32(data_out))
-                        except UserWarning:
-                            s_print("No GPS Data, not altering location.")
+                                kis_content.ParseFromString(kis_command.content)
+
+                            try:
+                                kis_content.gps.lat = location.lat
+                                kis_content.gps.lon = location.lon
+                                kis_content.gps.alt = location.alt
+                                if proto2:
+                                    data_out = kis_content.SerializeToString()
+                                    data[byte + 36:byte + 36 + data_size] = data_out
+                                else:
+                                    kis_command.content = kis_content.SerializeToString()
+                                    data_out = kis_command.SerializeToString()
+                                    data[byte - 2:byte + data_size - 2] = data_out
+                                    # s_print(f'Data out:\n{data_range.hex()}')
+                                    data[byte - 10:byte - 6] = struct.pack('!I', kismet_adler32(data_out))
+                            except UserWarning:
+                                s_print("No GPS Data, not altering location.")
                     except Exception as e:
                         s_print(e)
 
